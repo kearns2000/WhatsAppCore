@@ -1,0 +1,51 @@
+## Build
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+*.swp
+*~
+
+## NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Test
+TestResults/
+coverage*/
+*.coverage
+*.coveragexml
+
+## Secrets
+appsettings.*.local.json
+**/secrets.json
+.env
+.env.*
+!.env.example
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Rider / VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+## Local
+*.local
+.publish/
+node_modules/

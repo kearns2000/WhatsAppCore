@@ -1,0 +1,69 @@
+@baseUrl = http://localhost:5080
+
+### Send a text message
+POST {{baseUrl}}/messages/text
+Content-Type: application/json
+
+{
+  "to": "353871234567",
+  "body": "Hello from WhatsApp.Core Sample API",
+  "previewUrl": false
+}
+
+### Send a template message
+POST {{baseUrl}}/messages/template
+Content-Type: application/json
+
+{
+  "to": "353871234567",
+  "templateName": "hello_world",
+  "languageCode": "en_US",
+  "bodyParameters": [ "Patrick" ]
+}
+
+### Send an image message (by URL)
+POST {{baseUrl}}/messages/image
+Content-Type: application/json
+
+{
+  "to": "353871234567",
+  "link": "https://example.com/image.jpg",
+  "caption": "Sample image"
+}
+
+### Send a document message (by media id)
+POST {{baseUrl}}/messages/document
+Content-Type: application/json
+
+{
+  "to": "353871234567",
+  "mediaId": "MEDIA_ID_FROM_UPLOAD",
+  "fileName": "invoice.pdf",
+  "caption": "Your invoice"
+}
+
+### Send a reaction
+POST {{baseUrl}}/messages/reaction
+Content-Type: application/json
+
+{
+  "to": "353871234567",
+  "messageId": "wamid.REPLACE_ME",
+  "emoji": "👍"
+}
+
+### Mark a message as read
+POST {{baseUrl}}/messages/wamid.REPLACE_ME/read
+
+### Webhook verification (Meta subscription handshake)
+GET {{baseUrl}}/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=REPLACE_ME&hub.challenge=test-challenge-12345
+
+### Webhook delivery (requires valid X-Hub-Signature-256 header in production)
+POST {{baseUrl}}/webhooks/whatsapp
+Content-Type: application/json
+X-Hub-Signature-256: sha256=REPLACE_ME
+
+{
+  "object": "whatsapp_business_account",
+  "entry": []
+}

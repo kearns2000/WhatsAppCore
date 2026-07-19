@@ -1,0 +1,40 @@
+<Project>
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>Patrick Kearns</Authors>
+    <Copyright>Copyright (c) Patrick Kearns</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/kearns2000/WhatsAppCore</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kearns2000/WhatsAppCore</PackageProjectUrl>
+    <PackageTags>whatsapp;whatsapp-cloud-api;whatsapp-business;whatsapp-business-api;meta;facebook;graph-api;cloud-api;messaging;business-messaging;chat;sdk;dotnet;csharp;aspnetcore;aspnet-core;webhooks;webhook;hmac;signature-validation;media;templates;interactive-messages;api-client;http-client;opentelemetry</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>alpha.1</VersionSuffix>
+    <PackageReleaseNotes>Initial alpha release of WhatsApp.Core.</PackageReleaseNotes>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)assets\nuget-icon.png" Pack="true" PackagePath="icon.png" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true' AND '$(ContinuousIntegrationBuild)' == 'true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

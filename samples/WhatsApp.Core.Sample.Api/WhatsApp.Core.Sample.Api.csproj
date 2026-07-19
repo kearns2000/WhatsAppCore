@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WhatsApp.Core.Sample.Api</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);NU1903;IDE0005</NoWarn>
+    <UserSecretsId>whatsapp-core-sample-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WhatsApp.Core\WhatsApp.Core.csproj" />
+    <ProjectReference Include="..\..\src\WhatsApp.Core.AspNetCore\WhatsApp.Core.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>

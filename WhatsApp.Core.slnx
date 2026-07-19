@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WhatsApp.Core/WhatsApp.Core.csproj" />
+    <Project Path="src/WhatsApp.Core.AspNetCore/WhatsApp.Core.AspNetCore.csproj" />
+    <Project Path="src/WhatsApp.Core.Testing/WhatsApp.Core.Testing.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/WhatsApp.Core.Sample.Api/WhatsApp.Core.Sample.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WhatsApp.Core.Tests/WhatsApp.Core.Tests.csproj" />
+    <Project Path="tests/WhatsApp.Core.AspNetCore.Tests/WhatsApp.Core.AspNetCore.Tests.csproj" />
+    <Project Path="tests/WhatsApp.Core.Testing.Tests/WhatsApp.Core.Testing.Tests.csproj" />
+    <Project Path="tests/WhatsApp.Core.PackageTests/WhatsApp.Core.PackageTests.csproj" />
+  </Folder>
+</Solution>

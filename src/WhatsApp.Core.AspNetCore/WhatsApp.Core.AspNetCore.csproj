@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>WhatsApp.Core.AspNetCore</RootNamespace>
+    <AssemblyName>WhatsApp.Core.AspNetCore</AssemblyName>
+    <Description>ASP.NET Core webhook endpoints, signature validation, and typed event dispatch for WhatsApp.Core.</Description>
+    <PackageId>WhatsApp.Core.AspNetCore</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\..\NOTICE.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WhatsApp.Core\WhatsApp.Core.csproj" />
+  </ItemGroup>
+
+</Project>

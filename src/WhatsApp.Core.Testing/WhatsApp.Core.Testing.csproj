@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>WhatsApp.Core.Testing</RootNamespace>
+    <AssemblyName>WhatsApp.Core.Testing</AssemblyName>
+    <Description>Test doubles, fake clients, and webhook builders for WhatsApp.Core. Does not require a test framework.</Description>
+    <PackageId>WhatsApp.Core.Testing</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\..\NOTICE.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WhatsApp.Core\WhatsApp.Core.csproj" />
+  </ItemGroup>
+
+</Project>
