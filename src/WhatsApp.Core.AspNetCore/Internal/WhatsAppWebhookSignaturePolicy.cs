@@ -1,4 +1,5 @@
 using WhatsApp.Core.AspNetCore.Options;
+using WhatsApp.Core.Internal;
 
 namespace WhatsApp.Core.AspNetCore.Internal;
 
@@ -8,19 +9,21 @@ namespace WhatsApp.Core.AspNetCore.Internal;
 internal static class WhatsAppWebhookSignaturePolicy
 {
     /// <summary>
-    /// Returns <see langword="true"/> only when signature validation is explicitly disabled
-    /// and the insecure opt-in flag is set.
+    /// Returns <see langword="true"/> only when signature validation is explicitly disabled,
+    /// the insecure opt-in flag is set, and the hosting environment is development-like.
     /// </summary>
-    public static bool MaySkipSignatureValidation(WhatsAppWebhookOptions options)
+    public static bool MaySkipSignatureValidation(WhatsAppWebhookOptions options, string? environmentName)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return !options.RequireSignatureValidation && options.AllowInsecureNoSignatureValidation;
+        return !options.RequireSignatureValidation
+            && options.AllowInsecureNoSignatureValidation
+            && HostingEnvironmentNames.AllowsInsecureConfiguration(environmentName);
     }
 
     /// <summary>
-    /// Throws if per-endpoint options disable signature validation without the insecure opt-in.
+    /// Throws if options are not safe to map onto a webhook endpoint.
     /// </summary>
-    public static void EnsureMappable(WhatsAppWebhookOptions options)
+    public static void EnsureMappable(WhatsAppWebhookOptions options, string? environmentName)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -29,7 +32,7 @@ internal static class WhatsAppWebhookSignaturePolicy
             throw new InvalidOperationException(
                 $"{nameof(WhatsAppWebhookOptions.RequireSignatureValidation)} may only be set to false when "
                 + $"{nameof(WhatsAppWebhookOptions.AllowInsecureNoSignatureValidation)} is also true "
-                + "(local development and tests only; must never be enabled in production).");
+                + "(Development/Testing only; must never be enabled outside those environments).");
         }
 
         if (options.MaxRequestBodyBytes <= 0)
@@ -44,18 +47,13 @@ internal static class WhatsAppWebhookSignaturePolicy
                 $"{nameof(WhatsAppWebhookOptions.MaxDegreeOfParallelism)} must be at least 1.");
         }
 
-        if (MaySkipSignatureValidation(options) && IsProductionEnvironment())
+        if (!options.RequireSignatureValidation
+            && options.AllowInsecureNoSignatureValidation
+            && HostingEnvironmentNames.RestrictsInsecureConfiguration(environmentName))
         {
             throw new InvalidOperationException(
-                "Disabling webhook signature validation is not allowed when ASPNETCORE_ENVIRONMENT or "
-                + "DOTNET_ENVIRONMENT is Production.");
+                "Disabling webhook signature validation is only allowed when the hosting environment is "
+                + "Development, Testing, or Test.");
         }
-    }
-
-    public static bool IsProductionEnvironment()
-    {
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-        return string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase);
     }
 }

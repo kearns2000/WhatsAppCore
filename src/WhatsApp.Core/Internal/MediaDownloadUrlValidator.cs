@@ -64,7 +64,6 @@ internal static class MediaDownloadUrlValidator
         }
 
         // Tight allowlist: exact Graph host, Lookaside CDN, and well-known Meta media suffixes.
-        // Intentionally excludes a broad "*.facebook.com" match.
         if (host.Equals("lookaside.fbsbx.com", StringComparison.OrdinalIgnoreCase)
             || host.Equals("graph.facebook.com", StringComparison.OrdinalIgnoreCase)
             || host.EndsWith(".fbsbx.com", StringComparison.OrdinalIgnoreCase)
@@ -77,7 +76,7 @@ internal static class MediaDownloadUrlValidator
 
         foreach (var allowed in options.AllowedMediaDownloadHosts)
         {
-            if (string.IsNullOrWhiteSpace(allowed))
+            if (!IsValidAllowedHostEntry(allowed, out _))
             {
                 continue;
             }
@@ -88,12 +87,63 @@ internal static class MediaDownloadUrlValidator
             }
 
             if (allowed.StartsWith('.')
-                && host.EndsWith(allowed, StringComparison.OrdinalIgnoreCase))
+                && host.EndsWith(allowed, StringComparison.OrdinalIgnoreCase)
+                && host.Length > allowed.Length)
             {
                 return true;
             }
         }
 
+        return false;
+    }
+
+    /// <summary>
+    /// Validates a configured <see cref="WhatsAppOptions.AllowedMediaDownloadHosts"/> entry.
+    /// Suffix entries must be multi-label (e.g. <c>.fbcdn.net</c>), never a bare public suffix
+    /// like <c>.com</c>.
+    /// </summary>
+    public static bool IsValidAllowedHostEntry(string? entry, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(entry))
+        {
+            error = $"{nameof(WhatsAppOptions.AllowedMediaDownloadHosts)} entries must be non-empty host names or multi-label suffixes.";
+            return false;
+        }
+
+        if (entry.Contains('/', StringComparison.Ordinal)
+            || entry.Contains(':', StringComparison.Ordinal)
+            || entry.Contains(' ', StringComparison.Ordinal))
+        {
+            error = $"{nameof(WhatsAppOptions.AllowedMediaDownloadHosts)} entry '{entry}' must be a host name or DNS suffix, not a URL.";
+            return false;
+        }
+
+        if (entry.StartsWith('.'))
+        {
+            // Require at least one additional label separator (".cdn.example" / ".fbcdn.net").
+            if (entry.Length < 5 || entry.IndexOf('.', 1) <= 1 || entry.EndsWith('.'))
+            {
+                error = $"{nameof(WhatsAppOptions.AllowedMediaDownloadHosts)} suffix '{entry}' must be a multi-label DNS suffix (e.g. \".fbcdn.net\"), not a bare public suffix.";
+                return false;
+            }
+
+            return true;
+        }
+
+        if (entry.Contains('.', StringComparison.Ordinal) && !entry.StartsWith('.') && !entry.EndsWith('.'))
+        {
+            return true;
+        }
+
+        // Single-label exact hosts (e.g. "localhost") are allowed for tests.
+        if (!entry.Contains('.', StringComparison.Ordinal)
+            && entry.All(static c => char.IsAsciiLetterOrDigit(c) || c is '-'))
+        {
+            return true;
+        }
+
+        error = $"{nameof(WhatsAppOptions.AllowedMediaDownloadHosts)} entry '{entry}' is not a valid host name or multi-label suffix.";
         return false;
     }
 }

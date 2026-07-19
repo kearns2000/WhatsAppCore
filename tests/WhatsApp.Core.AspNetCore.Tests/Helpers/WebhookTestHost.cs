@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using WhatsApp.Core.AspNetCore.DependencyInjection;
 using WhatsApp.Core.AspNetCore.Dispatch;
 using WhatsApp.Core.AspNetCore.Options;
@@ -29,7 +30,10 @@ internal sealed class WebhookTestHost : IAsyncDisposable
         Action<WhatsAppWebhookOptions>? mapEndpointOptions = null,
         string route = "/webhooks/whatsapp")
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = Environments.Development,
+        });
         builder.WebHost.UseTestServer();
 
         builder.Services.AddWhatsAppCore(options =>

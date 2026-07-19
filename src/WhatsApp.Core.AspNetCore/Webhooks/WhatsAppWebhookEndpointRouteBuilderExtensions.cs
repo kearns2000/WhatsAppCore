@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using WhatsApp.Core.AspNetCore.Internal;
 using WhatsApp.Core.AspNetCore.Options;
@@ -30,13 +31,33 @@ public static class WhatsAppWebhookEndpointRouteBuilderExtensions
     /// <param name="endpoints">The endpoint route builder.</param>
     /// <param name="pattern">The route pattern to map, e.g. <c>"/webhooks/whatsapp"</c>.</param>
     /// <returns>A builder that can be used to further customize the mapped endpoints (e.g. add authorization metadata).</returns>
-    public static RouteGroupBuilder MapWhatsAppWebhook(this IEndpointRouteBuilder endpoints, string pattern) =>
-        MapCore(
+    public static RouteGroupBuilder MapWhatsAppWebhook(this IEndpointRouteBuilder endpoints, string pattern)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
+        var ambient = endpoints.ServiceProvider
+            .GetRequiredService<IOptionsMonitor<WhatsAppWebhookOptions>>()
+            .CurrentValue;
+        var environmentName = endpoints.ServiceProvider
+            .GetRequiredService<IHostEnvironment>()
+            .EnvironmentName;
+        WhatsAppWebhookSignaturePolicy.EnsureMappable(ambient, environmentName);
+
+        return MapCore(
             endpoints,
             pattern,
-            static context => context.RequestServices
-                .GetRequiredService<IOptionsMonitor<WhatsAppWebhookOptions>>()
-                .CurrentValue);
+            static context =>
+            {
+                var options = context.RequestServices
+                    .GetRequiredService<IOptionsMonitor<WhatsAppWebhookOptions>>()
+                    .CurrentValue;
+                var requestEnvironmentName = context.RequestServices
+                    .GetRequiredService<IHostEnvironment>()
+                    .EnvironmentName;
+                WhatsAppWebhookSignaturePolicy.EnsureMappable(options, requestEnvironmentName);
+                return options;
+            });
+    }
 
     /// <summary>
     /// Maps a WhatsApp webhook endpoint at <paramref name="pattern"/>, using a dedicated
@@ -74,7 +95,10 @@ public static class WhatsAppWebhookEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(options);
 
         var snapshot = options.Clone();
-        WhatsAppWebhookSignaturePolicy.EnsureMappable(snapshot);
+        var environmentName = endpoints.ServiceProvider
+            .GetRequiredService<IHostEnvironment>()
+            .EnvironmentName;
+        WhatsAppWebhookSignaturePolicy.EnsureMappable(snapshot, environmentName);
         return MapCore(endpoints, pattern, _ => snapshot);
     }
 

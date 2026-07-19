@@ -1,27 +1,34 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhatsApp.Core.AspNetCore.Diagnostics;
-using WhatsApp.Core.AspNetCore.Internal;
+using WhatsApp.Core.Internal;
 
 namespace WhatsApp.Core.AspNetCore.Options;
 
 /// <summary>
 /// Validates a <see cref="WhatsAppWebhookOptions"/> instance when it is first resolved,
 /// catching misconfiguration early and refusing insecure signature-validation opt-out unless
-/// explicitly allowed (and never in Production).
+/// explicitly allowed in a development-like environment.
 /// </summary>
 public sealed class WhatsAppWebhookOptionsValidator : IValidateOptions<WhatsAppWebhookOptions>
 {
     private readonly ILogger<WhatsAppWebhookOptionsValidator> _logger;
+    private readonly IHostEnvironment _environment;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WhatsAppWebhookOptionsValidator"/> class.
     /// </summary>
     /// <param name="logger">The logger used to emit the insecure-configuration warning.</param>
-    public WhatsAppWebhookOptionsValidator(ILogger<WhatsAppWebhookOptionsValidator> logger)
+    /// <param name="environment">The current hosting environment.</param>
+    public WhatsAppWebhookOptionsValidator(
+        ILogger<WhatsAppWebhookOptionsValidator> logger,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(environment);
         _logger = logger;
+        _environment = environment;
     }
 
     /// <inheritdoc />
@@ -49,13 +56,13 @@ public sealed class WhatsAppWebhookOptionsValidator : IValidateOptions<WhatsAppW
                 failures.Add(
                     $"{nameof(WhatsAppWebhookOptions.RequireSignatureValidation)} may only be set to false when "
                     + $"{nameof(WhatsAppWebhookOptions.AllowInsecureNoSignatureValidation)} is also true "
-                    + "(local development and tests only; must never be enabled in production).");
+                    + "(Development/Testing only).");
             }
-            else if (WhatsAppWebhookSignaturePolicy.IsProductionEnvironment())
+            else if (HostingEnvironmentNames.RestrictsInsecureConfiguration(_environment.EnvironmentName))
             {
                 failures.Add(
-                    "Disabling webhook signature validation is not allowed when ASPNETCORE_ENVIRONMENT or "
-                    + "DOTNET_ENVIRONMENT is Production.");
+                    "Disabling webhook signature validation is only allowed when the hosting environment is "
+                    + "Development, Testing, or Test.");
             }
             else
             {

@@ -42,4 +42,7 @@ internal static partial class WhatsAppWebhookLog
 
     [LoggerMessage(EventId = 11, Level = LogLevel.Warning, Message = "Webhook verification handshake on {Route} failed for mode '{Mode}'.")]
     public static partial void VerificationFailed(ILogger logger, string route, string? mode);
+
+    [LoggerMessage(EventId = 12, Level = LogLevel.Warning, Message = "Using MemoryWhatsAppWebhookDeduplicator (process-local). Meta redeliveries after process restart, or across multiple instances, are not suppressed. Register a durable IWhatsAppWebhookDeduplicator for production multi-instance deployments.")]
+    public static partial void MemoryDeduplicatorProcessLocal(ILogger logger);
 }

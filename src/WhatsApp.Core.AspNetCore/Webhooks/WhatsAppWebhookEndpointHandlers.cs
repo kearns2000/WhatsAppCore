@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhatsApp.Core.AspNetCore.Diagnostics;
@@ -95,7 +96,10 @@ internal static class WhatsAppWebhookEndpointHandlers
 
         // Skip HMAC only when both the disable flag and the explicit insecure opt-in are set.
         // Per-endpoint snapshots are also gated by WhatsAppWebhookSignaturePolicy.EnsureMappable.
-        if (!WhatsAppWebhookSignaturePolicy.MaySkipSignatureValidation(webhookOptions))
+        var environmentName = context.RequestServices
+            .GetRequiredService<IHostEnvironment>()
+            .EnvironmentName;
+        if (!WhatsAppWebhookSignaturePolicy.MaySkipSignatureValidation(webhookOptions, environmentName))
         {
             using var signatureActivity = WhatsAppWebhookDiagnostics.StartValidateSignatureActivity();
 

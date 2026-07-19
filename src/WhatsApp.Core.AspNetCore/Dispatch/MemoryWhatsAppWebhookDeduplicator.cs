@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using WhatsApp.Core.AspNetCore.Diagnostics;
 using WhatsApp.Core.AspNetCore.Webhooks;
 
 namespace WhatsApp.Core.AspNetCore.Dispatch;
@@ -19,7 +21,9 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
     private readonly ConcurrentDictionary<string, long> _seen = new(StringComparer.Ordinal);
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _retention;
+    private readonly ILogger<MemoryWhatsAppWebhookDeduplicator>? _logger;
     private long _lastPruneTicks;
+    private int _warned;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MemoryWhatsAppWebhookDeduplicator"/> class
@@ -27,7 +31,7 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
     /// </summary>
     /// <param name="timeProvider">Supplies the current UTC time for expiry.</param>
     public MemoryWhatsAppWebhookDeduplicator(TimeProvider timeProvider)
-        : this(timeProvider, DefaultRetention)
+        : this(timeProvider, DefaultRetention, logger: null)
     {
     }
 
@@ -37,6 +41,20 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
     /// <param name="timeProvider">Supplies the current UTC time for expiry.</param>
     /// <param name="retention">How long accepted keys are remembered before they may be accepted again.</param>
     public MemoryWhatsAppWebhookDeduplicator(TimeProvider timeProvider, TimeSpan retention)
+        : this(timeProvider, retention, logger: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemoryWhatsAppWebhookDeduplicator"/> class.
+    /// </summary>
+    /// <param name="timeProvider">Supplies the current UTC time for expiry.</param>
+    /// <param name="retention">How long accepted keys are remembered before they may be accepted again.</param>
+    /// <param name="logger">Optional logger used to warn that in-process dedup is not multi-instance safe.</param>
+    public MemoryWhatsAppWebhookDeduplicator(
+        TimeProvider timeProvider,
+        TimeSpan retention,
+        ILogger<MemoryWhatsAppWebhookDeduplicator>? logger)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);
         if (retention <= TimeSpan.Zero)
@@ -46,6 +64,7 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
 
         _timeProvider = timeProvider;
         _retention = retention;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -54,21 +73,28 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
         ArgumentNullException.ThrowIfNull(notification);
         stopToken.ThrowIfCancellationRequested();
 
+        WarnOnceAboutProcessLocalScope();
         PruneExpiredEntriesIfDue();
 
         var key = WhatsAppWebhookDedupKey.For(notification);
         var nowTicks = _timeProvider.GetUtcNow().UtcTicks;
         var expiresAtTicks = _timeProvider.GetUtcNow().Add(_retention).UtcTicks;
 
-        // Retry briefly so an expired entry can be replaced without a permanent false reject.
-        for (var attempt = 0; attempt < 3; attempt++)
+        // Retry briefly so an expired or concurrently pruned entry can be accepted.
+        for (var attempt = 0; attempt < 4; attempt++)
         {
             if (_seen.TryAdd(key, expiresAtTicks))
             {
                 return Task.FromResult(true);
             }
 
-            if (!_seen.TryGetValue(key, out var existingExpiresAt) || existingExpiresAt > nowTicks)
+            if (!_seen.TryGetValue(key, out var existingExpiresAt))
+            {
+                // Pruned (or removed) between TryAdd and TryGetValue - retry TryAdd.
+                continue;
+            }
+
+            if (existingExpiresAt > nowTicks)
             {
                 return Task.FromResult(false);
             }
@@ -80,6 +106,16 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
         }
 
         return Task.FromResult(false);
+    }
+
+    private void WarnOnceAboutProcessLocalScope()
+    {
+        if (_logger is null || Interlocked.Exchange(ref _warned, 1) == 1)
+        {
+            return;
+        }
+
+        WhatsAppWebhookLog.MemoryDeduplicatorProcessLocal(_logger);
     }
 
     private void PruneExpiredEntriesIfDue()

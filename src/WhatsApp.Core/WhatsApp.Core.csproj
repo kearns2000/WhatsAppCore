@@ -19,10 +19,12 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="WhatsApp.Core.Tests" />
+    <InternalsVisibleTo Include="WhatsApp.Core.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />

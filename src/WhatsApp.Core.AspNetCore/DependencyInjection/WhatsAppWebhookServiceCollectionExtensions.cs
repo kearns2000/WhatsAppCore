@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhatsApp.Core.AspNetCore.Dispatch;
 using WhatsApp.Core.AspNetCore.Options;
@@ -41,7 +42,10 @@ public static class WhatsAppWebhookServiceCollectionExtensions
             ServiceDescriptor.Singleton<IValidateOptions<WhatsAppWebhookOptions>, WhatsAppWebhookOptionsValidator>());
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IWhatsAppWebhookDeduplicator>(provider =>
-            new MemoryWhatsAppWebhookDeduplicator(provider.GetRequiredService<TimeProvider>()));
+            new MemoryWhatsAppWebhookDeduplicator(
+                provider.GetRequiredService<TimeProvider>(),
+                MemoryWhatsAppWebhookDeduplicator.DefaultRetention,
+                provider.GetService<ILogger<MemoryWhatsAppWebhookDeduplicator>>()));
         services.TryAddScoped<IWhatsAppWebhookReceiver, WhatsAppWebhookReceiver>();
 
         return services;

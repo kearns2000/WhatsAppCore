@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using WhatsApp.Core.Diagnostics;
+using WhatsApp.Core.Internal;
 
 namespace WhatsApp.Core.Configuration;
 
@@ -13,6 +15,7 @@ namespace WhatsApp.Core.Configuration;
 public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
 {
     private readonly ILogger<WhatsAppOptionsValidator> _logger;
+    private readonly string? _environmentName;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WhatsAppOptionsValidator"/> class that
@@ -25,12 +28,34 @@ public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WhatsAppOptionsValidator"/> class.
+    /// Falls back to ASPNETCORE_ENVIRONMENT / DOTNET_ENVIRONMENT when no host environment is available.
     /// </summary>
     /// <param name="logger">The logger used to emit insecure-configuration warnings.</param>
     public WhatsAppOptionsValidator(ILogger<WhatsAppOptionsValidator> logger)
+        : this(logger, environmentName: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WhatsAppOptionsValidator"/> class that prefers
+    /// <see cref="IHostEnvironment.EnvironmentName"/> for insecure-configuration gates (same source
+    /// as webhook options validation).
+    /// </summary>
+    /// <param name="logger">The logger used to emit insecure-configuration warnings.</param>
+    /// <param name="environment">The current hosting environment.</param>
+    public WhatsAppOptionsValidator(ILogger<WhatsAppOptionsValidator> logger, IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(environment);
+        _logger = logger;
+        _environmentName = environment.EnvironmentName;
+    }
+
+    private WhatsAppOptionsValidator(ILogger<WhatsAppOptionsValidator> logger, string? environmentName)
     {
         ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
+        _environmentName = environmentName;
     }
 
     /// <inheritdoc />
@@ -74,15 +99,23 @@ public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
         }
         else if (options.AllowInsecureHttp)
         {
-            if (IsProductionEnvironment())
+            if (HostingEnvironmentNames.RestrictsInsecureConfiguration(_environmentName))
             {
                 failures.Add(
-                    $"{nameof(WhatsAppOptions.AllowInsecureHttp)} must not be enabled when ASPNETCORE_ENVIRONMENT or "
-                    + "DOTNET_ENVIRONMENT is Production.");
+                    $"{nameof(WhatsAppOptions.AllowInsecureHttp)} is only allowed when the hosting environment is "
+                    + "Development, Testing, or Test.");
             }
             else
             {
                 WhatsAppLog.InsecureHttpAllowed(_logger, accountLabel);
+            }
+        }
+
+        foreach (var host in options.AllowedMediaDownloadHosts)
+        {
+            if (!MediaDownloadUrlValidator.IsValidAllowedHostEntry(host, out var hostError))
+            {
+                failures.Add(hostError);
             }
         }
 
@@ -108,12 +141,5 @@ public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
 
         var prefixed = failures.ConvertAll(failure => $"[{accountLabel}] {failure}");
         return ValidateOptionsResult.Fail(prefixed);
-    }
-
-    private static bool IsProductionEnvironment()
-    {
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-        return string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase);
     }
 }

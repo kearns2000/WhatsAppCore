@@ -1,5 +1,11 @@
 # WhatsApp.Core
 
+[![CI](https://github.com/kearns2000/WhatsAppCore/actions/workflows/ci.yml/badge.svg)](https://github.com/kearns2000/WhatsAppCore/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/WhatsApp.Core.svg?logo=nuget)](https://www.nuget.org/packages/WhatsApp.Core/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/WhatsApp.Core.svg?logo=nuget)](https://www.nuget.org/packages/WhatsApp.Core/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+
 <img src="https://raw.githubusercontent.com/kearns2000/WhatsAppCore/main/assets/logo.png" alt="WhatsApp.Core logo" width="160" height="160" />
 
 A modern .NET SDK for the [Meta WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api). Send strongly typed messages, manage media, receive webhooks, and integrate with ASP.NET Core - without reimplementing HTTP plumbing, signature validation, or JSON serialization yourself.
