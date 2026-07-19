@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using WhatsApp.Core.AspNetCore.Internal;
 using WhatsApp.Core.AspNetCore.Options;
 
 namespace WhatsApp.Core.AspNetCore.Webhooks;
@@ -73,6 +74,7 @@ public static class WhatsAppWebhookEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(options);
 
         var snapshot = options.Clone();
+        WhatsAppWebhookSignaturePolicy.EnsureMappable(snapshot);
         return MapCore(endpoints, pattern, _ => snapshot);
     }
 

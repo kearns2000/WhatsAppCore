@@ -34,9 +34,12 @@ if (app.Environment.IsDevelopment())
 
 var messages = app.MapGroup("/messages").WithTags("Messages");
 
-// Outbound send endpoints proxy the WhatsApp access token. Bind them only in Development so a
-// misconfigured public deployment cannot be used as an unauthenticated messaging relay.
-if (app.Environment.IsDevelopment())
+// Outbound send endpoints proxy the WhatsApp access token. Require Development and an explicit
+// Sample:EnableSendApi=true so a mis-set ASPNETCORE_ENVIRONMENT alone cannot open a relay.
+var enableSampleSendApi = app.Environment.IsDevelopment()
+    && app.Configuration.GetValue("Sample:EnableSendApi", defaultValue: false);
+
+if (enableSampleSendApi)
 {
     messages.MapPost("/text", async (SendTextMessageRequest request, IWhatsAppClient client, CancellationToken stopToken) =>
     {

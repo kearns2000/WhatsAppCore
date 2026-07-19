@@ -53,7 +53,7 @@ public static class WhatsAppServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configure);
 
         AddCoreServices(services);
-        services.AddOptions<WhatsAppOptions>(accountName).Configure(configure);
+        services.AddOptions<WhatsAppOptions>(accountName).Configure(configure).ValidateOnStart();
         RegisterAccount(services, accountName);
         return services;
     }
@@ -74,7 +74,7 @@ public static class WhatsAppServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configurationSection);
 
         AddCoreServices(services);
-        services.AddOptions<WhatsAppOptions>(accountName).Bind(configurationSection);
+        services.AddOptions<WhatsAppOptions>(accountName).Bind(configurationSection).ValidateOnStart();
         RegisterAccount(services, accountName);
         return services;
     }
@@ -96,6 +96,12 @@ public static class WhatsAppServiceCollectionExtensions
                 var options = provider.GetRequiredService<IOptionsMonitor<WhatsAppOptions>>().Get(accountName);
                 httpClient.BaseAddress = options.BaseAddress;
                 httpClient.Timeout = options.Timeout;
+            })
+            .ConfigurePrimaryHttpMessageHandler(static () => new SocketsHttpHandler
+            {
+                // Media downloads re-validate each Location; Graph calls typically do not redirect.
+                AllowAutoRedirect = false,
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
             })
             .AddHttpMessageHandler(provider =>
                 new WhatsAppAuthenticationHandler(accountName, provider.GetRequiredService<IOptionsMonitor<WhatsAppOptions>>()));

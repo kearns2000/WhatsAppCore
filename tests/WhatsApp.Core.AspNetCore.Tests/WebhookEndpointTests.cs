@@ -202,6 +202,27 @@ public sealed class WebhookDeliveryTests
         await handler.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal("NoSig", handler.Events[0].Body);
     }
+
+    [Fact]
+    public async Task MapWhatsAppWebhook_RejectsSignatureDisableWithoutOptIn()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await using var _ = await WebhookTestHost.CreateAsync(
+                mapEndpointOptions: o => o.RequireSignatureValidation = false);
+        });
+    }
+
+    [Fact]
+    public async Task Delivery_RejectsUnsignedBodyByDefault()
+    {
+        await using var host = await WebhookTestHost.CreateAsync();
+
+        var body = WhatsAppWebhookBuilder.Create().AddTextMessage("wamid.1", "15550001111", "NoSig").BuildJson();
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        var response = await host.Client.PostAsync("/webhooks/whatsapp", content);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }
 
 public sealed class WebhookDispatchTests

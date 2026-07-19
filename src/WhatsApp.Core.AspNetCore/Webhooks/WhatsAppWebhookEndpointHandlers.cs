@@ -93,11 +93,13 @@ internal static class WhatsAppWebhookEndpointHandlers
         WhatsAppWebhookDiagnostics.RecordWebhookReceived(route);
         WhatsAppWebhookLog.WebhookReceived(logger, route, body.LongLength);
 
-        if (webhookOptions.RequireSignatureValidation)
+        // Skip HMAC only when both the disable flag and the explicit insecure opt-in are set.
+        // Per-endpoint snapshots are also gated by WhatsAppWebhookSignaturePolicy.EnsureMappable.
+        if (!WhatsAppWebhookSignaturePolicy.MaySkipSignatureValidation(webhookOptions))
         {
             using var signatureActivity = WhatsAppWebhookDiagnostics.StartValidateSignatureActivity();
 
-            if (string.IsNullOrEmpty(whatsAppOptions.AppSecret))
+            if (string.IsNullOrWhiteSpace(whatsAppOptions.AppSecret))
             {
                 WhatsAppWebhookLog.AppSecretNotConfigured(logger, route, accountName);
                 return Results.StatusCode(StatusCodes.Status500InternalServerError);

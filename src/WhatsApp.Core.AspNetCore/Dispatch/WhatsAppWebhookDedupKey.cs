@@ -28,7 +28,8 @@ public static class WhatsAppWebhookDedupKey
         {
             WhatsAppMessageEvent messageEvent => messageEvent.MessageId,
             WhatsAppMessageStatusEvent statusEvent => statusEvent.MessageId,
-            _ => Guid.NewGuid().ToString("N"),
+            // Stable across redeliveries of the same envelope occurrence (no Guid.NewGuid).
+            _ => $"ts:{notification.ReceivedAt.UtcTicks}",
         };
 
         return $"{notification.WhatsAppBusinessAccountId}:{eventType}:{messageId}";

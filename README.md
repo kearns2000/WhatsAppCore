@@ -417,7 +417,7 @@ Run the included sample API:
 dotnet run --project samples/WhatsApp.Core.Sample.Api
 ```
 
-Configure credentials via user secrets or `appsettings.Development.json`, then explore the Swagger UI at `http://localhost:5080/swagger` or use `WhatsApp.Core.Sample.Api.http`.
+Configure credentials via user secrets or `appsettings.Development.json`, then explore the Swagger UI at `http://localhost:5080/swagger` or use `WhatsApp.Core.Sample.Api.http`. Outbound `/messages/*` routes require Development **and** `Sample:EnableSendApi=true` (set in `appsettings.Development.json`).
 
 ## Contributing
 

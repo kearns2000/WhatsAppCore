@@ -57,8 +57,29 @@ public sealed class MemoryWhatsAppWebhookDeduplicator : IWhatsAppWebhookDeduplic
         PruneExpiredEntriesIfDue();
 
         var key = WhatsAppWebhookDedupKey.For(notification);
+        var nowTicks = _timeProvider.GetUtcNow().UtcTicks;
         var expiresAtTicks = _timeProvider.GetUtcNow().Add(_retention).UtcTicks;
-        return Task.FromResult(_seen.TryAdd(key, expiresAtTicks));
+
+        // Retry briefly so an expired entry can be replaced without a permanent false reject.
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (_seen.TryAdd(key, expiresAtTicks))
+            {
+                return Task.FromResult(true);
+            }
+
+            if (!_seen.TryGetValue(key, out var existingExpiresAt) || existingExpiresAt > nowTicks)
+            {
+                return Task.FromResult(false);
+            }
+
+            if (_seen.TryUpdate(key, expiresAtTicks, existingExpiresAt))
+            {
+                return Task.FromResult(true);
+            }
+        }
+
+        return Task.FromResult(false);
     }
 
     private void PruneExpiredEntriesIfDue()

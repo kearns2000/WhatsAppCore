@@ -29,11 +29,13 @@ public static class WhatsAppWebhookServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddOptions<WhatsAppWebhookOptions>();
+        var optionsBuilder = services.AddOptions<WhatsAppWebhookOptions>();
         if (configure is not null)
         {
-            services.Configure(configure);
+            optionsBuilder.Configure(configure);
         }
+
+        optionsBuilder.ValidateOnStart();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<WhatsAppWebhookOptions>, WhatsAppWebhookOptionsValidator>());

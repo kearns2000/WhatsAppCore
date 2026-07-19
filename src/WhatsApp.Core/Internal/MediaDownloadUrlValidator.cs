@@ -20,34 +20,57 @@ internal static class MediaDownloadUrlValidator
             throw new WhatsAppValidationException("The media download URL is missing or is not an absolute URI.");
         }
 
-        if (!string.Equals(absoluteUrl.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        EnsureAllowed(absoluteUrl, options);
+    }
+
+    public static void EnsureAllowed(Uri url, WhatsAppOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (!url.IsAbsoluteUri)
+        {
+            throw new WhatsAppValidationException("The media download URL is missing or is not an absolute URI.");
+        }
+
+        if (!string.Equals(url.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
         {
             throw new WhatsAppValidationException("The media download URL must use HTTPS.");
         }
 
-        var host = absoluteUrl.IdnHost;
-        if (IsAllowedHost(host, options))
+        if (IsAllowedCredentialedHost(url.IdnHost, options))
         {
             return;
         }
 
         throw new WhatsAppValidationException(
-            $"The media download URL host '{host}' is not an allowed Meta media host.");
+            $"The media download URL host '{url.IdnHost}' is not an allowed Meta media host.");
     }
 
-    private static bool IsAllowedHost(string host, WhatsAppOptions options)
+    /// <summary>
+    /// Returns whether a request host may receive the Graph bearer access token.
+    /// </summary>
+    public static bool IsAllowedCredentialedHost(string? host, WhatsAppOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return false;
+        }
+
         if (string.Equals(host, options.BaseAddress.IdnHost, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
+        // Tight allowlist: exact Graph host, Lookaside CDN, and well-known Meta media suffixes.
+        // Intentionally excludes a broad "*.facebook.com" match.
         if (host.Equals("lookaside.fbsbx.com", StringComparison.OrdinalIgnoreCase)
             || host.Equals("graph.facebook.com", StringComparison.OrdinalIgnoreCase)
             || host.EndsWith(".fbsbx.com", StringComparison.OrdinalIgnoreCase)
             || host.EndsWith(".fbcdn.net", StringComparison.OrdinalIgnoreCase)
-            || host.EndsWith(".whatsapp.net", StringComparison.OrdinalIgnoreCase)
-            || host.EndsWith(".facebook.com", StringComparison.OrdinalIgnoreCase))
+            || host.EndsWith(".cdn.whatsapp.net", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("mmg.whatsapp.net", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

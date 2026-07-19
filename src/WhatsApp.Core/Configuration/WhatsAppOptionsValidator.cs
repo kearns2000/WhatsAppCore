@@ -74,7 +74,16 @@ public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
         }
         else if (options.AllowInsecureHttp)
         {
-            WhatsAppLog.InsecureHttpAllowed(_logger, accountLabel);
+            if (IsProductionEnvironment())
+            {
+                failures.Add(
+                    $"{nameof(WhatsAppOptions.AllowInsecureHttp)} must not be enabled when ASPNETCORE_ENVIRONMENT or "
+                    + "DOTNET_ENVIRONMENT is Production.");
+            }
+            else
+            {
+                WhatsAppLog.InsecureHttpAllowed(_logger, accountLabel);
+            }
         }
 
         if (options.Timeout <= TimeSpan.Zero)
@@ -99,5 +108,12 @@ public sealed class WhatsAppOptionsValidator : IValidateOptions<WhatsAppOptions>
 
         var prefixed = failures.ConvertAll(failure => $"[{accountLabel}] {failure}");
         return ValidateOptionsResult.Fail(prefixed);
+    }
+
+    private static bool IsProductionEnvironment()
+    {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+        return string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase);
     }
 }

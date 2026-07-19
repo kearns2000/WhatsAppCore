@@ -18,16 +18,12 @@ internal static class ConstantTimeEquals
     /// <returns><see langword="true"/> if both strings are non-null, non-empty, and equal; otherwise <see langword="false"/>.</returns>
     public static bool StringsEqual(string? a, string? b)
     {
-        if (a is null || b is null)
-        {
-            return false;
-        }
-
-        var aHash = SHA256.HashData(Encoding.UTF8.GetBytes(a));
-        var bHash = SHA256.HashData(Encoding.UTF8.GetBytes(b));
+        // Always hash both sides (null treated as empty) so timing does not leak null vs non-null.
+        var aHash = SHA256.HashData(Encoding.UTF8.GetBytes(a ?? string.Empty));
+        var bHash = SHA256.HashData(Encoding.UTF8.GetBytes(b ?? string.Empty));
         var digestsEqual = CryptographicOperations.FixedTimeEquals(aHash, bHash);
 
-        // Empty verify tokens are never valid, even if both sides are empty.
-        return digestsEqual && a.Length > 0 && b.Length > 0;
+        // Empty or null verify tokens are never valid.
+        return digestsEqual && !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b);
     }
 }

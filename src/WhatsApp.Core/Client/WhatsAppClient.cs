@@ -194,14 +194,50 @@ internal sealed class WhatsAppClient(
     {
         MediaDownloadUrlValidator.EnsureAllowed(metadata.Url, options);
 
-        var response = await httpClient
-            .GetAsync(metadata.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-            .ConfigureAwait(false);
+        // AllowAutoRedirect is disabled on the named HttpClient; follow redirects only after
+        // re-validating each Location against the media host allowlist.
+        var url = metadata.Url;
+        HttpResponseMessage? response = null;
+        const int maxRedirects = 3;
+
+        for (var hop = 0; hop <= maxRedirects; hop++)
+        {
+            response = await httpClient
+                .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            var status = (int)response.StatusCode;
+            if (status is < 300 or >= 400)
+            {
+                break;
+            }
+
+            var location = response.Headers.Location;
+            response.Dispose();
+            response = null;
+
+            if (location is null)
+            {
+                throw new WhatsAppValidationException("The media download response redirected without a Location header.");
+            }
+
+            var next = location.IsAbsoluteUri
+                ? location
+                : new Uri(new Uri(url, UriKind.Absolute), location);
+
+            MediaDownloadUrlValidator.EnsureAllowed(next, options);
+            url = next.AbsoluteUri;
+
+            if (hop == maxRedirects)
+            {
+                throw new WhatsAppValidationException("The media download exceeded the maximum number of allowed redirects.");
+            }
+        }
 
         try
         {
-            await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-            var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureSuccessAsync(response!, cancellationToken).ConfigureAwait(false);
+            var stream = await response!.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             var contentType = response.Content.Headers.ContentType?.MediaType ?? metadata.MimeType;
             var contentLength = response.Content.Headers.ContentLength ?? metadata.FileSizeBytes;
             var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
@@ -216,7 +252,7 @@ internal sealed class WhatsAppClient(
         }
         catch
         {
-            response.Dispose();
+            response?.Dispose();
             throw;
         }
     }
