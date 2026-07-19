@@ -382,7 +382,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 - **Minor** - Backward-compatible features.
 - **Patch** - Backward-compatible bug fixes.
 
-Pre-release versions use suffixes such as `alpha`, `beta`, or `rc`. The current version is **0.1.0-alpha.1**.
+Pre-release versions use suffixes such as `alpha`, `beta`, or `rc`. The current version is **0.1.0**.
 
 During the 0.x series, minor releases may include breaking changes as the public API stabilizes. Pin exact versions in production until 1.0.
 
